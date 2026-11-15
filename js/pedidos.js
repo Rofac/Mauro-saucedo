@@ -39,7 +39,9 @@ function leerWhatsApp(txt) {
   for (const l of lineas) {
     const m = l.match(re);
     if (m) {
-      const hora = m[1] || m[8], d = m[2] || m[5], mes = m[3] || m[6]; let a = m[4] || m[7]; if (a.length === 2) a = '20' + a;
+      let hora = m[1] || m[8]; const pre = l.slice(0, l.indexOf(m[9])), hh = +hora.split(':')[0];
+      if (/\d\s*p\.?\s?m/i.test(pre) && hh < 12) hora = (hh + 12) + hora.slice(hora.indexOf(':')); else if (/\d\s*a\.?\s?m/i.test(pre) && hh === 12) hora = '00' + hora.slice(2);
+      const d = m[2] || m[5], mes = m[3] || m[6]; let a = m[4] || m[7]; if (a.length === 2) a = '20' + a;
       msgs.push({ fecha: `${a}-${mes.padStart(2, '0')}-${d.padStart(2, '0')}`, hora: hora.padStart(5, '0'), quien: m[9].trim(), texto: m[10] });
     } else if (msgs.length) msgs[msgs.length - 1].texto += '\n' + l;
     else msgs.push({ texto: l });
@@ -77,7 +79,7 @@ function filaPedido(p, conFecha) {
   const conQ = q ? ls.filter(l => normal(q).split(/\s+/).some(w => w && normal(l).includes(w))) : [];      // al buscar, se ven los renglones que coinciden
   const atr = atrasado(p), primeras = (conQ.length ? conQ : ls).slice(0, 2).join(' · ');
   return `<div class="it ped ${atr ? 'atr' : ''}" data-p="${p.id}"><div class="av" style="font-size:12.5px;line-height:1.1;text-align:center">${conFecha ? `${dm(p.recibido)}<br>` : ''}${p.recibido.slice(11, 16)}</div>
-    <div class="tx"><b>${esc(p.cliente)}</b><small>${esc(primeras.slice(0, 110))}${primeras.length > 110 ? '…' : ''}</small>
+    <div class="tx"><b>${esc(p.cliente)}${iconosAdj(p)}</b><small>${esc(primeras.slice(0, 110))}${primeras.length > 110 ? '…' : ''}</small>
       <small>${p.estado === 'PENDIENTE' ? `<span class="pill ${atr ? 'mal' : 'warn'}">${ico('pendiente')} Falta cargar · ${haceCuanto(p.recibido)}</span>` : `<span class="pill ${PILL_P[p.estado]}">${ico(p.estado === 'ENTREGADO' ? 'entregado' : 'cargado')} ${ESTADOS_P[p.estado]}${p.nro ? ' · N° ' + esc(p.nro) : ''}</span>`}
       ${p.importe ? ` <span class="pill">${money(p.importe)}</span>` : ''}${p.retiro ? ` <span class="pill info">${ico('camion')} ${p.retiro === hoy() ? 'hoy' : dm(p.retiro)}</span>` : ''}</small></div>
     ${p.estado === 'PENDIENTE' ? `<button class="btn chico acento" data-cargar="${p.id}" title="Ya lo cargué">${ico('check')} Cargado</button>` : ''}</div>`;
@@ -90,14 +92,15 @@ PANTALLAS.pedidos = async (main) => {
   if (FP.q) l = l.filter(p => coincide(p.cliente + ' ' + p.texto + ' ' + (p.nro || '') + ' ' + (p.nota || ''), FP.q));
   l.sort((a, b) => FP.estado === 'PENDIENTE' ? a.recibido.localeCompare(b.recibido) : b.recibido.localeCompare(a.recibido));
   const porDia = []; for (const p of l) { const f = p.recibido.slice(0, 10); if (!porDia.length || porDia[porDia.length - 1].f !== f) porDia.push({ f, l: [] }); porDia[porDia.length - 1].l.push(p); }
-  main.innerHTML = `<div class="fila" style="margin-bottom:10px"><div class="buscar">${ico('buscar')}<input id="pqQ" type="search" placeholder="Buscar cliente, producto, N° de pedido…" value="${esc(FP.q)}"></div></div>
+  main.innerHTML = `<div class="fila" style="margin-bottom:10px"><div class="buscar">${ico('buscar')}<input id="pqQ" type="search" placeholder="Buscar cliente, producto, N° de pedido…" value="${esc(FP.q)}"></div><button class="btn acento" id="pqPeg">${ico('copiar')} Pegar</button></div>
     <div class="tabsf" id="pqE">${[['PENDIENTE', 'Falta cargar'], ['CARGADO', 'Cargados'], ['ENTREGADO', 'Entregados'], ['TODOS', 'Todos']].map(([k, t]) => `<button data-e="${k}" class="${FP.estado === k ? 'act' : ''}">${t} <span class="pill ${k === 'PENDIENTE' && cuenta(k) ? 'mal' : ''}">${cuenta(k)}</span></button>`).join('')}</div>
     <div class="chips" id="pqPer" style="margin-bottom:12px">${[['todo', 'Todos los días'], ['hoy', 'Hoy'], ['ayer', 'Ayer'], ['semana', '7 días'], ['mes', 'Este mes']].map(([k, t]) => `<button data-per="${k}" class="${FP.periodo === k ? 'act' : ''}">${t}</button>`).join('')}
       <label class="btn chico ${FP.periodo === 'dia' ? 'pri' : ''}" style="margin:0;position:relative">${ico('agenda')} ${FP.periodo === 'dia' ? dmy(FP.dia) : 'Elegir día'}<input type="date" id="pqDia" value="${FP.dia}" style="position:absolute;inset:0;opacity:0"></label></div>
     ${porDia.map(g => `<div class="card" style="padding:4px 14px"><h2 style="font-size:14px;padding:10px 0 4px;color:var(--txt2)">${g.f === hoy() ? 'Hoy' : g.f === sumarDias(hoy(), -1) ? 'Ayer' : fechaLarga(g.f)} <span class="muted" style="font-weight:600">· ${g.l.length} pedido${g.l.length === 1 ? '' : 's'}</span></h2>
       <div class="lista">${g.l.map(p => filaPedido(p)).join('')}</div></div>`).join('') || `<div class="card">${vacio('pedido', FP.estado === 'PENDIENTE' && !FP.q ? `¡No hay nada pendiente de cargar! 🎉` : 'No hay pedidos con ese filtro')}</div>`}
-    <p class="muted chico" style="text-align:center">Para guardar un pedido desde WhatsApp: mantené apretado el mensaje → <b>Compartir</b> → <b>${esc(DB.cfg.nombre || 'esta app')}</b>.</p>`;
+    <p class="muted chico" style="text-align:center">Para guardar un pedido de WhatsApp: mantené apretado el mensaje → tocá <b>copiar</b> (los dos cuadraditos de arriba) → acá tocá <b>Pegar pedido</b>.</p>`;
   const re = () => PANTALLAS.pedidos(main);
+  $('#pqPeg').onclick = () => pegarPedido(re);
   $('#pqQ').oninput = debounce(e => { FP.q = e.target.value; re().then(() => { const i = $('#pqQ'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }); }, 300);
   $('#pqE').onclick = e => { const b = e.target.closest('[data-e]'); if (b) { FP.estado = b.dataset.e; re(); } };
   $('#pqPer').onclick = e => { const b = e.target.closest('[data-per]'); if (b) { FP.periodo = b.dataset.per; re(); } };
@@ -116,7 +119,7 @@ function verPedido(p, luego) {
   const m = modal(`${ico('pedido')} Pedido de ${esc(p.cliente)}`, `
     <div class="ped-pasos">${pasos.map(([t, f]) => `<div class="${f ? 'si' : ''}"><i>${f ? ico('check') : ''}</i><b>${t}</b><small>${f ? `${f.slice(0, 10) === hoy() ? 'hoy' : dm(f)} ${f.slice(11, 16)}` : '—'}</small></div>`).join('')}</div>
     ${rep.length ? `<div class="estado-cuota warn" style="margin:10px 0"><div class="tx"><b>¿Repetido?</b> ${esc(p.cliente)} mandó un pedido igual el ${rep.map(o => dm(o.recibido) + ' ' + o.recibido.slice(11, 16) + ' (' + ESTADOS_P[o.estado].toLowerCase() + ')').join(', ')}.</div></div>` : ''}
-    <div class="ped-texto">${esc(p.texto)}</div>
+    <div class="ped-texto">${esc(p.texto)}</div>${(p.adj || []).length ? '<div class="adj" id="vpAdj"></div>' : ''}
     <table class="t" style="margin-top:10px">${p.nro ? `<tr><td class="muted">N° de pedido en ${esc(PROV())}</td><td class="r"><b>${esc(p.nro)}</b></td></tr>` : ''}
       ${p.importe ? `<tr><td class="muted">Importe</td><td class="r"><b>${money(p.importe)}</b> <span class="pill ${p.cobrado ? 'ok' : 'warn'}">${p.cobrado ? 'pagó en el momento' : 'a cuenta'}</span></td></tr>` : ''}
       ${p.importe && !p.cobrado && saldoCliente(p.cliente_id) > 0.009 ? `<tr><td class="muted">${esc(p.cliente)} debe en total</td><td class="r"><b class="mal">${money(saldoCliente(p.cliente_id))}</b></td></tr>` : ''}${p.retiro ? `<tr><td class="muted">Retiro / entrega</td><td class="r"><b>${fechaLarga(p.retiro)}</b></td></tr>` : ''}
@@ -126,6 +129,7 @@ function verPedido(p, luego) {
     `${p.estado !== 'PENDIENTE' ? `<button class="btn" id="vpPen">Volver a "falta cargar"</button>` : ''}
      ${p.estado === 'PENDIENTE' ? `<button class="btn acento" id="vpCar">${ico('check')} Ya lo cargué en ${esc(PROV())}</button>` : ''}
      ${p.estado === 'CARGADO' ? `<button class="btn pri" id="vpEnt">${ico('entregado')} Entregado</button>` : ''}`, 'ancho');
+  if ((p.adj || []).length) pintarAdjuntos($('#vpAdj', m), p.adj);
   const fin = async (estado, msg, extra) => { try { const des = await cambiarEstado(p, estado, extra); m.cerrar(); luego && luego(); toastDeshacer(msg, des); } catch (e) { fallo(e); } };
   if ($('#vpCar', m)) $('#vpCar', m).onclick = async () => {
     const nro = await pedirTexto(`Cargado en ${PROV()}`, `N° de pedido en ${PROV()} (opcional, podés dejarlo vacío)`, p.nro || '');
@@ -143,16 +147,29 @@ function verPedido(p, luego) {
   };
 }
 
+/* ---------- pegar lo copiado en WhatsApp: abre el pedido nuevo ya escrito ---------- */
+async function pegarPedido(luego) {
+  if (DB.soloLectura) return toast(DB.mensajeBloqueo, true);
+  let t = '';
+  try { t = (await navigator.clipboard.readText()) || ''; } catch (e) { t = null; }
+  if (t === null) { editarPedido({}, luego); return toast('Mantené apretado el cuadro "Pedido" y tocá Pegar', true); }
+  if (!t.trim()) { editarPedido({}, luego); return toast('No hay nada copiado. En WhatsApp mantené apretado el mensaje y tocá el ícono de copiar', true); }
+  const w = leerWhatsApp(t), rec = w.fecha && `${w.fecha} ${w.hora}` <= ahora() ? `${w.fecha} ${w.hora}` : ahora();
+  editarPedido({ cliente: w.cliente || '', texto: w.texto, recibido: rec }, luego);
+}
+
 /* ---------- cargar o modificar un pedido ---------- */
 function editarPedido(x, luego) {
   x = x || {};
   const nuevo = !x.id, rec = x.recibido || ahora(), c = x.cliente_id ? DB.get('clientes', x.cliente_id) : clientePorNombre(x.cliente);
   const clientes = DB.todos('clientes').slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const m = modal(nuevo ? `${ico('pedido')} Pedido nuevo` : 'Modificar pedido', `<div class="form">
-    <div class="campo full"><label>Cliente</label><input id="ep_c" list="epCl" value="${esc(x.cliente || '')}" placeholder="Nombre del cliente o del negocio" autocomplete="off">
+    <div class="campo full"><label class="fila" style="justify-content:space-between">Cliente ${hayContactos() ? `<button type="button" class="btn chico" id="epCon">${ico('contactos')} De mis contactos</button>` : ''}</label><input id="ep_c" list="epCl" value="${esc(x.cliente || '')}" placeholder="Nombre del cliente o del negocio" autocomplete="off">
       <datalist id="epCl">${clientes.map(k => `<option value="${esc(k.nombre)}">`).join('')}</datalist></div>
     <div class="campo full"><label class="fila" style="justify-content:space-between">Pedido <button type="button" class="btn chico" id="epPeg">${ico('copiar')} Pegar lo copiado</button></label>
       <textarea id="ep_t" style="min-height:150px" placeholder="Lo que pidió: productos, cantidades…">${esc(x.texto || '')}</textarea></div>
+    <div class="campo full"><label class="fila" style="justify-content:space-between">Fotos y audios <label class="btn chico" style="margin:0">${ico('clip')} Agregar<input type="file" id="epArch" accept="image/*,audio/*" multiple hidden></label></label>
+      <div class="adj" id="epAdj"></div><small class="muted" id="epAdjV">${(x.adj || []).length || (x._nuevos || []).length ? '' : 'Si el pedido vino en una foto o un audio, compartilo desde WhatsApp a esta app, o agregalo acá.'}</small></div>
     <div class="campo"><label>Llegó el día</label><input type="date" id="ep_f" value="${rec.slice(0, 10)}"></div>
     <div class="campo"><label>A la hora</label><input type="time" id="ep_h" value="${rec.slice(11, 16)}"></div>
     <div class="campo"><label>Importe (opcional)</label>${campoMonto('id="ep_i"', x.importe || '')}</div>
@@ -163,6 +180,17 @@ function editarPedido(x, luego) {
     ${nuevo ? `<div class="campo full"><label class="chk"><input type="checkbox" id="ep_ya"> Ya lo cargué en ${esc(PROV())}</label></div>` : ''}</div>
     <div id="epRep"></div>`,
     `<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" id="epOk">${ico('check')} Guardar</button>`, 'ancho');
+  /* fotos y audios: los que ya tenía (quedan), los que se agregan (nuevos) y los que se quitan */
+  const quedan = (x.adj || []).slice(), nuevos = (x._nuevos || []).slice(), quitados = []; delete x._nuevos;
+  const pintarA = () => { pintarAdjuntos($('#epAdj', m), [...quedan, ...nuevos], true); $('#epAdjV', m).hidden = !!(quedan.length + nuevos.length); };
+  pintarA();
+  $('#epAdj', m).onclick = e => { const b = e.target.closest('[data-quitar]'); if (!b) return; const i = +b.dataset.quitar; if (i < quedan.length) quitados.push(...quedan.splice(i, 1)); else nuevos.splice(i - quedan.length, 1); pintarA(); };
+  $('#epArch', m).onchange = e => { for (const f of e.target.files) { const tipo = tipoArchivo(f.type, f.name); if (tipo) nuevos.push({ blob: f, tipo, mime: f.type, nombre: f.name }); else toast('Sólo fotos o audios', true); } e.target.value = ''; pintarA(); };
+  if ($('#epCon', m)) $('#epCon', m).onclick = async () => {
+    const [k] = await elegirContactos(false); if (!k) return;
+    const ya = clientePorTel(k.tel) || clientePorNombre(k.nombre);
+    $('#ep_c', m).value = ya ? ya.nombre : k.nombre; $('#ep_tel', m).value = k.tel || (ya && ya.tel) || '';
+  };
   $('#ep_c', m).onchange = () => { const k = clientePorNombre(val('ep_c', m)); if (k && k.tel && !val('ep_tel', m)) $('#ep_tel', m).value = k.tel; };
   $('#epPeg', m).onclick = async () => {
     try { const t = await navigator.clipboard.readText(); if (!t.trim()) return toast('No hay nada copiado', true); const w = leerWhatsApp(t);
@@ -171,24 +199,33 @@ function editarPedido(x, luego) {
   };
   if (!nuevo || x.texto) setTimeout(() => (val('ep_c', m) ? $('#ep_t', m) : $('#ep_c', m)).focus(), 80); else setTimeout(() => $('#ep_c', m).focus(), 80);
   $('#epOk', m).onclick = async () => {
+    const bt = $('#epOk', m); if (bt.disabled) return; bt.disabled = true;      // que no se guarde dos veces si toca rápido (achicar la foto tarda un poquito)
     try {
-      const nombre = val('ep_c', m), texto = $('#ep_t', m).value.trim(), f = val('ep_f', m), hh = val('ep_h', m) || '00:00', imp = $('#ep_i', m).value.trim();
-      if (!nombre) throw new Error('Poné el nombre del cliente'); if (!texto) throw new Error('Escribí o pegá el pedido'); if (!f) throw new Error('Poné el día en que llegó');
+      const nombre = val('ep_c', m), escrito = $('#ep_t', m).value.trim().replace(/^Pedido por (foto y audio|foto|audio)$/, ''), hayAdj = quedan.length + nuevos.length > 0, f = val('ep_f', m), hh = val('ep_h', m) || '00:00', imp = $('#ep_i', m).value.trim();
+      if (!nombre) throw new Error('Poné el nombre del cliente'); if (!escrito && !hayAdj) throw new Error('Escribí o pegá el pedido (o agregá la foto o el audio)');
+      const texto = escrito || textoPorAdjuntos([...quedan, ...nuevos]); if (!f) throw new Error('Poné el día en que llegó');
       if (imp && (isNaN(aNum(imp)) || aNum(imp) < 0)) throw new Error('Revisá el importe');
       const recibido = `${f} ${hh}`;
       if (recibido > ahora()) throw new Error('La fecha y hora no pueden ser después de ahora');
       const cli = await asegurarCliente(nombre, val('ep_tel', m));
       if (val('ep_tel', m) && cli.tel !== val('ep_tel', m)) { cli.tel = val('ep_tel', m); await DB.guardar('clientes', cli); }
       const prueba = Object.assign({}, x, { cliente_id: cli.id, texto, recibido });
-      const rep = posiblesRepetidos(prueba);
+      const rep = escrito ? posiblesRepetidos(prueba) : [];
       if (rep.length && nuevo && !await confirmar(`<b>${esc(cli.nombre)}</b> ya mandó un pedido igual el ${rep.map(o => dm(o.recibido) + ' ' + o.recibido.slice(11, 16) + ' (' + ESTADOS_P[o.estado].toLowerCase() + ')').join(', ')}.<br><br>¿Lo guardo igual?`, 'Sí, guardar')) return;
       const ya = nuevo && $('#ep_ya', m).checked;
       Object.assign(x, { cliente_id: cli.id, cliente: cli.nombre, texto, recibido, importe: imp ? r2(aNum(imp)) : 0, cobrado: !!imp && $('#ep_cob', m).checked, retiro: val('ep_r', m), nota: val('ep_n', m) });
       if (nuevo) Object.assign(x, { estado: ya ? 'CARGADO' : 'PENDIENTE', cargado_en: ya ? ahora() : '', entregado_en: '', nro: '' });
       await DB.guardar('pedidos', x);
+      if (nuevos.length || quitados.length) {
+        const adj = quedan.slice();
+        for (const a of nuevos) { const blob = a.tipo === 'foto' ? await achicarFoto(a.blob) : a.blob;
+          adj.push({ id: await ADJ.guardar({ pedido_id: x.id, tipo: a.tipo, mime: blob.type || a.mime || '', nombre: a.nombre || '', blob, creado_iso: new Date().toISOString() }), tipo: a.tipo }); }
+        x.adj = adj; await DB.guardar('pedidos', x);
+        for (const a of quitados) await ADJ.borrar(a.id).catch(() => {});
+      }
       await DB.anotar(nuevo ? 'Pedido nuevo' : 'Pedido modificado', `${cli.nombre} · ${dmy(recibido)} ${hh}`);
       m.cerrar(); toast(nuevo ? (ya ? 'Pedido guardado como cargado' : 'Pedido guardado: falta cargarlo') : 'Pedido modificado'); luego && luego();
-    } catch (e) { fallo(e); }
+    } catch (e) { fallo(e); } finally { bt.disabled = false; }
   };
   return m;
 }

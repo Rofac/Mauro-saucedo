@@ -1,5 +1,5 @@
 /* Datos guardados en el celular (IndexedDB). Todo se carga en memoria al abrir y cada cambio se escribe al instante.
-   No hace falta internet. La copia de seguridad es un archivo .json con todo (fotos incluidas). */
+   No hace falta internet. La copia de seguridad es un archivo .json con todo menos las fotos y audios de los pedidos. */
 'use strict';
 
 const TABLAS = ['clientes', 'pedidos', 'gastos', 'eventos', 'movs', 'pagar', 'actividad'];
@@ -16,10 +16,11 @@ const DB = {
   db: null, t: {}, cfg: {}, soloLectura: false, mensajeBloqueo: '',
   abrir() {
     return new Promise((ok, mal) => {
-      const r = indexedDB.open('rofac_pedidos', 1);
+      const r = indexedDB.open('rofac_pedidos', 2);
       r.onupgradeneeded = () => {
         const d = r.result;
         for (const t of TABLAS) if (!d.objectStoreNames.contains(t)) d.createObjectStore(t, { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('archivos')) d.createObjectStore('archivos', { keyPath: 'id', autoIncrement: true });
         for (const t of ['config', 'equipo', 'copias']) if (!d.objectStoreNames.contains(t)) d.createObjectStore(t, { keyPath: 'k' });
       };
       r.onerror = () => mal(r.error || new Error('No se pudo abrir la base de datos'));

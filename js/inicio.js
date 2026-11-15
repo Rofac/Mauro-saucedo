@@ -18,7 +18,8 @@ PANTALLAS.inicio = async (main) => {
       <div class="kpi"><small>Hoy</small><b>${deHoy.length}</b><div class="sub">llegaron · ${cargHoy.length} cargados</div></div>
       <div class="kpi" data-ir="cuentas" id="kpDeben"><small>Me deben</small><b>${money(meDeben)}</b><div class="sub">${prom.length ? `${prom.length} tenían que pagar` : 'ver cuentas ›'}</div></div>
       <div class="kpi" data-ir="gastos"><small>Gastos</small><b>${money(gMes)}</b><div class="sub">hoy ${money(gHoy)}</div></div></div>
-    <div class="fila" style="margin-bottom:14px"><button class="btn acento" id="inP">${ico('plus')} Pedido</button><button class="btn" id="inG">${ico('plus')} Gasto</button><button class="btn" id="inC">${ico('check')} Me pagaron</button></div>
+    <button class="btn acento grande" id="inPeg" style="width:100%;margin-bottom:10px;padding:14px;font-size:16px">${ico('copiar')} Pegar pedido de WhatsApp</button>
+    <div class="fila" style="margin-bottom:14px"><button class="btn" id="inP">${ico('plus')} Pedido</button><button class="btn" id="inG">${ico('plus')} Gasto</button><button class="btn" id="inC">${ico('check')} Me pagaron</button></div>
     ${avisarCopia ? `<div class="estado-cuota warn" style="margin-bottom:14px"><div class="tx"><b>${diasCopia === null ? 'Todavía no hiciste ninguna copia de seguridad' : `Hace ${diasCopia} días que no hacés copia de seguridad`}</b><small>Si se rompe o se pierde el celular, se pierde todo.</small></div><button class="btn chico" id="inCp">Hacer copia</button></div>` : ''}
     <div class="card"><h2>${ico('pendiente')} Falta cargar en ${esc(PROV())}<span class="sp"></span>${pend.length ? `<span class="pill mal">${pend.length}</span>` : ''}</h2>
       <div class="lista">${pend.slice(0, 8).map(p => filaPedido(p, p.recibido.slice(0, 10) !== h)).join('') || vacio('cargado', '¡Está todo cargado! 🎉')}</div>
@@ -29,11 +30,13 @@ PANTALLAS.inicio = async (main) => {
       ${rt.map(p => `<div class="it" data-p="${p.id}"><div class="av">${ico('camion')}</div><div class="tx"><b>Retiro: ${esc(p.cliente)}</b><small>${esc(p.texto.split('\n')[0].slice(0, 70))}</small></div><span class="pill ${PILL_P[p.estado]}">${ESTADOS_P[p.estado]}</span></div>`).join('')}
       ${prom.map(c => `<div class="it" data-cc="${c.id}"><div class="av">${ico('plata')}</div><div class="tx"><b>${esc(c.nombre)} ${c.promete < h ? 'tenía que pagar el ' + dm(c.promete) : 'dijo que paga hoy'}</b><small>Debe ${money(saldoCliente(c.id))}</small></div></div>`).join('')}</div></div>` : ''}
     ${guia ? `<div class="card guia"><h2>${ico('wa')} Cómo guardar un pedido de WhatsApp<span class="sp"></span><button class="ib" id="inGuiaX" aria-label="Ocultar">${ico('x')}</button></h2>
-      <ol style="margin:0;padding-left:20px;line-height:1.7"><li>En WhatsApp, <b>mantené apretado</b> el mensaje del pedido (o varios).</li><li>Tocá <b>Compartir</b> (o los tres puntitos → Compartir) y elegí <b>${esc(DB.cfg.nombre || 'esta app')}</b>.</li>
-      <li>Se abre el pedido ya escrito: poné o confirmá el cliente y tocá <b>Guardar</b>. Queda en "Falta cargar".</li><li>Cuando lo pasás a ${esc(PROV())}, tocá <b>Cargado</b>.</li></ol>
-      <p class="muted chico" style="margin-bottom:0">Si no aparece en Compartir: copiá el mensaje y en "+ Pedido" tocá "Pegar lo copiado". Para que aparezca, la app tiene que estar instalada.</p></div>` : ''}`;
+      <ol style="margin:0;padding-left:20px;line-height:1.7"><li>En WhatsApp, <b>mantené apretado</b> el mensaje del pedido. Si son varios, tocá los demás para marcarlos también.</li><li>Arriba tocá <b>copiar</b> (los dos cuadraditos).</li>
+      <li>Abrí <b>${esc(DB.cfg.nombre || 'esta app')}</b> y tocá <b>Pegar pedido de WhatsApp</b>. Se abre el pedido ya escrito: confirmá el cliente y tocá <b>Guardar</b>. Queda en "Falta cargar".</li><li>Cuando lo pasás a ${esc(PROV())}, tocá <b>Cargado</b>.</li></ol>
+      <p class="muted chico" style="margin-bottom:0">Si copiás varios mensajes juntos, la app saca sola el nombre del cliente, el día y la hora. La primera vez el celular puede preguntar si la app puede ver lo copiado: tocá <b>Permitir</b>.<br>
+      <b>Pedido en foto o audio:</b> mantené apretada la foto o el audio → <b>Compartir</b> (arriba) → <b>${esc(DB.cfg.nombre || 'esta app')}</b>. Queda guardado en el pedido para verlo o escucharlo.</p></div>` : ''}`;
   const re = () => PANTALLAS.inicio(main);
   $('#inP').onclick = () => editarPedido({}, re);
+  $('#inPeg').onclick = () => pegarPedido(re);
   $('#inG').onclick = () => editarGasto({}, re);
   $('#inC').onclick = () => movCliente(null, 'COBRO', re);
   if ($('#inCp')) $('#inCp').onclick = hacerCopia;

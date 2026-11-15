@@ -3,8 +3,14 @@ MS PEDIDOS — app de celular (Android) para Mauro Saucedo
 Para revendedores que reciben pedidos por WhatsApp y los cargan en la app del proveedor (Jaguar).
 
 QUÉ HACE
-- PEDIDOS: desde WhatsApp, mantener apretado el mensaje (o varios) → Compartir → "MS Pedidos".
-  Se abre el pedido ya escrito (si se comparten varios mensajes toma solo el cliente, el día y la hora).
+- PEDIDOS: en WhatsApp, mantener apretado el mensaje (o marcar varios) → ícono COPIAR (dos cuadraditos) →
+  en la app "Pegar pedido de WhatsApp". Se abre el pedido ya escrito (si se copian varios mensajes juntos
+  toma solo el cliente, el día y la hora). WhatsApp no tiene "Compartir" para mensajes de texto.
+  FOTOS Y AUDIOS: mantener apretada la foto o el audio → Compartir → "MS Pedidos". Se guardan en el pedido
+  (la foto se achica para ocupar poco; el audio se escucha desde la app). También "Agregar" dentro del pedido.
+  No van en la copia de seguridad; en Configuración se pueden borrar los de pedidos entregados.
+- CONTACTOS: "De mis contactos" al cargar un pedido o un cliente, y "Traer clientes de mis contactos" en Clientes
+  (elige varios de una vez). Trae nombre y teléfono. Funciona en Chrome de Android.
   Queda en "Falta cargar" (en rojo si pasan más de 3 horas, se cambia en Configuración).
   Botón "Cargado" cuando lo pasa a Jaguar (opcional: N° de pedido), después "Entregado". Todo tiene Deshacer.
   Busca por cliente, producto o N°; filtra por hoy, ayer, 7 días, el mes o un día. Avisa si un pedido parece repetido.
@@ -24,8 +30,7 @@ carpeta MSPedidos, Settings > Pages > main / (root). Queda en https://rofac.gith
 INSTALARLA EN EL CELULAR DEL CLIENTE (Android)
 1. Abrir el link en CHROME → menú ⋮ → "Instalar aplicación".
 2. Abrirla una vez desde el ícono "MS Pedidos" y aceptar los términos.
-3. Recién instalada aparece en "Compartir" de WhatsApp (a veces hay que reiniciar el celular la primera vez).
-   En iPhone no aparece en Compartir: se copia el mensaje y en "+ Pedido" se toca "Pegar lo copiado".
+3. La primera vez que toca "Pegar pedido", Chrome pregunta si la app puede ver lo copiado: "Permitir".
 
 LICENCIA: generar_licencia_apps.py opción 5 (PED), con el nombre que figura en Configuración (viene "Mauro Saucedo")
 y el código del celular (Configuración > Licencia). El generador NO va en el zip ni a GitHub.

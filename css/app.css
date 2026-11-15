@@ -343,3 +343,15 @@ a.btn { text-decoration:none; }
 @media (max-width: 560px) { .mes-dia { min-height:70px; } .mes-t { font-size:10px; padding:1px 2px; } .it.ped .btn.chico { padding:6px 9px; } }
 
 .estado-cuota .tx small { display:block; margin-top:2px; }
+
+/* fotos y audios de los pedidos */
+.adj { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.adj:empty { display: none; }
+.adj-it { position: relative; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; background: var(--card2); }
+.adj-it.foto { width: 96px; height: 96px; }
+.adj-it.foto img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+.adj-it.audio { flex: 1 1 240px; padding: 6px 40px 6px 6px; display: flex; align-items: center; min-height: 54px; }
+.adj-it.audio audio { width: 100%; height: 40px; }
+.adj-it .muted { padding: 8px; display: block; }
+.adj-x { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; min-height: 0; border-radius: 50%; background: rgba(0,0,0,.6) !important; color: #fff !important; padding: 0; }
+.adj-x .i { width: 16px; height: 16px; }

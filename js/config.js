@@ -63,6 +63,10 @@ PANTALLAS.config = async (main) => {
       ${copias.length ? `<p class="muted chico" style="margin-bottom:6px">Además la app guarda sola una copia por día adentro del celular (las últimas 5), por si se borra algo sin querer:</p>
         <div class="fila">${copias.map(x => `<button class="btn chico" data-ci="${x.k}">${dmy(x.fecha)}</button>`).join('')}</div>` : ''}</div>
 
+    <div class="card"><h2>${ico('foto')} Fotos y audios de los pedidos</h2>
+      <p style="margin-top:0" class="muted">No van en la copia de seguridad (pesarían mucho): quedan sólo en este celular. El texto de los pedidos sí va.</p>
+      <p id="cfEsp" class="muted">Calculando…</p><div class="fila" id="cfEspB"></div></div>
+
     <div class="card"><h2>${ico('candado')} Clave del dueño</h2>
       <p style="margin-top:0" class="muted">Si la ponés, la pide para entrar a Gastos y a la Configuración. Sirve si otra persona usa el celular para anotar pedidos.</p>
       <div class="fila"><input id="cf_pin" type="password" inputmode="numeric" placeholder="${c.pin ? 'Nueva clave (4 a 8 números)' : '4 a 8 números'}" style="max-width:240px" autocomplete="new-password">
@@ -98,6 +102,11 @@ PANTALLAS.config = async (main) => {
   $('#cfRs').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { restaurarCopia(JSON.parse(await f.text())); } catch (x) { fallo(new Error('No se pudo leer el archivo de copia')); } };
   $('#cfPin').onclick = async () => { const p = val('cf_pin'); if (!/^\d{4,8}$/.test(p)) return toast('La clave tiene que ser de 4 a 8 números', true); await DB.setCfg('pin', await sha256(p), true); DESBLOQUEADO = true; await DB.anotar('Clave del dueño cambiada'); toast('Clave guardada'); re(); };
   if ($('#cfPinQ')) $('#cfPinQ').onclick = async () => { if (!await confirmar('¿Quitar la clave del dueño?', 'Quitar', true)) return; await DB.setCfg('pin', '', true); toast('Clave quitada'); re(); };
+  espacioAdjuntos().then(e => { const el = $('#cfEsp'); if (!el) return;
+    el.innerHTML = e.n ? `Hay <b>${e.n}</b> foto${e.n === 1 ? '' : 's'} o audio${e.n === 1 ? '' : 's'} guardados (${String(e.mb).replace('.', ',')} MB).` : 'Todavía no hay fotos ni audios guardados.';
+    if (e.entregados) { $('#cfEspB').innerHTML = `<button class="btn" id="cfEspX">${ico('trash')} Borrar los de pedidos entregados (${e.entregados})</button>`;
+      $('#cfEspX').onclick = async () => { if (!await confirmar(`¿Borrar las fotos y audios de los pedidos <b>ya entregados</b>? El texto de los pedidos queda.`, 'Borrar', true)) return;
+        try { const n = await borrarAdjuntosEntregados(); toast(`Listo: se borraron los de ${n} pedido${n === 1 ? '' : 's'}`); PANTALLAS.config($('#main')); } catch (x) { fallo(x); } }; } });
   $('#cfEqC').onclick = async () => { try { await navigator.clipboard.writeText(lic.equipo); toast('Código copiado'); } catch (e) { toast('Mantené apretado el código para copiarlo'); } };
   $('#cfEqW').onclick = () => abrirWa('', `Hola! Te paso el código del celular para la licencia de ${DB.cfg.nombre}: ${lic.equipo}`);
   $('#cfLic').onclick = async () => { const k = $('#cf_lic').value.replace(/\s/g, ''); const r = await LIC.verificar(k, DB.cfg.nombre, lic.equipo);

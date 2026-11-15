@@ -9,10 +9,26 @@ PANTALLAS.clientes = async (main) => {
   let l = DB.todos('clientes').slice(); if (Q_CLI) l = l.filter(c => coincide(c.nombre + ' ' + (c.tel || '') + ' ' + (c.direccion || ''), Q_CLI));
   l.sort((a, b) => ((info[b.id] || {}).ult || '').localeCompare((info[a.id] || {}).ult || '') || a.nombre.localeCompare(b.nombre, 'es'));
   main.innerHTML = `<div class="fila" style="margin-bottom:12px"><div class="buscar">${ico('buscar')}<input id="clQ" type="search" placeholder="Buscar cliente…" value="${esc(Q_CLI)}"></div><button class="btn acento" id="clN">${ico('plus')} Cliente</button></div>
+    ${hayContactos() ? `<button class="btn" id="clCon" style="width:100%;margin-bottom:12px">${ico('contactos')} Traer clientes de mis contactos</button>` : ''}
     <div class="card" style="padding:4px 14px"><div class="lista">${l.map(c => { const i = info[c.id] || { n: 0, pend: 0, ult: '' };
       return `<div class="it" data-c="${c.id}">${avatar(c)}<div class="tx"><b>${esc(c.nombre)}</b><small>${i.n} pedido${i.n === 1 ? '' : 's'}${i.ult ? ' · último ' + dm(i.ult) : ''}${c.tel ? ' · ' + esc(c.tel) : ''}</small></div>${i.pend ? `<span class="pill mal">${i.pend} sin cargar</span>` : ''}${saldoCliente(c.id) > 0.009 ? `<span class="pill warn">debe ${money(saldoCliente(c.id))}</span>` : ''}</div>`; }).join('') || vacio('alumnos', 'Los clientes se agregan solos al guardar el primer pedido')}</div></div>`;
   $('#clQ').oninput = debounce(e => { Q_CLI = e.target.value; PANTALLAS.clientes(main).then(() => { const i = $('#clQ'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }); }, 300);
   $('#clN').onclick = () => editarCliente({}, () => PANTALLAS.clientes(main));
+  if ($('#clCon')) $('#clCon').onclick = async () => {
+    const l = await elegirContactos(true); if (!l.length) return;
+    let nuevos = 0, tels = 0;
+    try {
+      for (const k of l) {
+        const ya = clientePorTel(k.tel) || clientePorNombre(k.nombre);
+        if (ya) { if (k.tel && !ya.tel) { ya.tel = k.tel; await DB.guardar('clientes', ya); tels++; } continue; }
+        if (!k.nombre) continue;
+        await DB.guardar('clientes', { nombre: k.nombre, tel: k.tel, direccion: '', notas: '' }); nuevos++;
+      }
+      if (nuevos) await DB.anotar('Clientes de contactos', nuevos + ' nuevos');
+      toast(nuevos ? `Se agregaron ${nuevos} cliente${nuevos === 1 ? '' : 's'}${tels ? ` y se completó el teléfono de ${tels}` : ''}` : tels ? `Se completó el teléfono de ${tels}` : 'Esos contactos ya estaban como clientes');
+    } catch (e) { fallo(e); }
+    PANTALLAS.clientes(main);
+  };
   main.onclick = e => { const c = e.target.closest('[data-c]'); if (c) ir('ficha', +c.dataset.c, true); };
 };
 
@@ -40,11 +56,12 @@ PANTALLAS.ficha = async (main, id) => {
 
 function editarCliente(c, luego) {
   const m = modal(c.id ? 'Modificar cliente' : 'Cliente nuevo', `<div class="form">
-    <div class="campo full"><label>Nombre</label><input id="cl_n" value="${esc(c.nombre || '')}" autofocus></div>
+    <div class="campo full"><label class="fila" style="justify-content:space-between">Nombre ${hayContactos() ? `<button type="button" class="btn chico" id="clCt">${ico('contactos')} De mis contactos</button>` : ''}</label><input id="cl_n" value="${esc(c.nombre || '')}" autofocus></div>
     <div class="campo"><label>Teléfono</label><input id="cl_t" inputmode="tel" value="${esc(c.tel || '')}"></div>
     <div class="campo"><label>Dirección</label><input id="cl_d" value="${esc(c.direccion || '')}"></div>
     <div class="campo full"><label>Notas</label><textarea id="cl_o">${esc(c.notas || '')}</textarea></div></div>`,
     `${c.id ? `<button class="btn rojo" id="clB">${ico('trash')}</button>` : ''}<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" id="clOk">${ico('check')} Guardar</button>`);
+  if ($('#clCt', m)) $('#clCt', m).onclick = async () => { const [k] = await elegirContactos(false); if (!k) return; if (k.nombre) $('#cl_n', m).value = k.nombre; if (k.tel) $('#cl_t', m).value = k.tel; };
   $('#clOk', m).onclick = async () => { try {
     const n = val('cl_n', m).replace(/\s+/g, ' '); if (!n) throw new Error('Poné el nombre');
     if (DB.todos('clientes').some(k => k.id !== c.id && normal(k.nombre) === normal(n))) throw new Error('Ya hay un cliente con ese nombre');

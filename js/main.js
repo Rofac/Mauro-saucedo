@@ -31,10 +31,17 @@ function instalarApp() {
 }
 
 /* lo que llega con "Compartir" desde WhatsApp (u otra app): abre el pedido nuevo ya escrito */
-function recibirCompartido() {
+async function recibirCompartido() {
   const q = new URLSearchParams(location.search), t = [q.get('title'), q.get('text'), q.get('url')].filter(Boolean);
   if (!q.has('compartido') && !q.get('text')) return;
   history.replaceState(null, '', location.pathname + '?app=pedidos');
+  if (q.get('archivos')) {
+    const arch = await leerCompartidos();
+    if (DB.soloLectura) return toast(DB.mensajeBloqueo, true);
+    if (!arch.length) return toast('No llegó ninguna foto ni audio que se pueda guardar', true);
+    const txt = q.get('text') && !/^https?:/.test(q.get('text')) ? q.get('text') : '';
+    return editarPedido({ cliente: '', texto: txt, recibido: ahora(), _nuevos: arch }, recargar);
+  }
   let txt = q.get('text') || '';
   if (q.get('title') && !txt.includes(q.get('title')) && !/whatsapp/i.test(q.get('title'))) txt = q.get('title') + '\n' + txt;
   if (!txt.trim()) txt = t.join('\n');
@@ -52,7 +59,7 @@ async function datosIniciales() { /* nada que cargar de fábrica: los clientes s
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', aplicarTema);
     await datosIniciales();
     await arrancarLicencia();
-    DB.copiaDiaria();
+    DB.copiaDiaria(); limpiarAdjuntos();
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     $('#btnCobrar').onclick = () => editarPedido({}, recargar);
     $('#btnInstalar').onclick = instalarApp;
