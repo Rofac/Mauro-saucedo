@@ -164,8 +164,8 @@ function editarPedido(x, luego) {
   const nuevo = !x.id, rec = x.recibido || ahora(), c = x.cliente_id ? DB.get('clientes', x.cliente_id) : clientePorNombre(x.cliente);
   const clientes = DB.todos('clientes').slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const m = modal(nuevo ? `${ico('pedido')} Pedido nuevo` : 'Modificar pedido', `<div class="form">
-    <div class="campo full"><label class="fila" style="justify-content:space-between">Cliente ${hayContactos() ? `<button type="button" class="btn chico" id="epCon">${ico('contactos')} De mis contactos</button>` : ''}</label><input id="ep_c" list="epCl" value="${esc(x.cliente || '')}" placeholder="Nombre del cliente o del negocio" autocomplete="off">
-      <datalist id="epCl">${clientes.map(k => `<option value="${esc(k.nombre)}">`).join('')}</datalist></div>
+    <div class="campo full"><label class="fila" style="justify-content:space-between">Cliente ${hayContactos() ? `<button type="button" class="btn chico" id="epCon">${ico('contactos')} De mis contactos</button>` : ''}</label><input id="ep_c" value="${esc(x.cliente || '')}" placeholder="Escribí o tocá un cliente de abajo" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="sug" id="epSug"></div></div>
     <div class="campo full"><label class="fila" style="justify-content:space-between">Pedido <button type="button" class="btn chico" id="epPeg">${ico('copiar')} Pegar lo copiado</button></label>
       <textarea id="ep_t" style="min-height:150px" placeholder="Lo que pidió: productos, cantidades…">${esc(x.texto || '')}</textarea></div>
     <div class="campo full"><label class="fila" style="justify-content:space-between">Fotos y audios <label class="btn chico" style="margin:0">${ico('clip')} Agregar<input type="file" id="epArch" accept="image/*,audio/*" multiple hidden></label></label>
@@ -189,9 +189,22 @@ function editarPedido(x, luego) {
   if ($('#epCon', m)) $('#epCon', m).onclick = async () => {
     const [k] = await elegirContactos(false); if (!k) return;
     const ya = clientePorTel(k.tel) || clientePorNombre(k.nombre);
-    $('#ep_c', m).value = ya ? ya.nombre : k.nombre; $('#ep_tel', m).value = k.tel || (ya && ya.tel) || '';
+    $('#ep_c', m).value = ya ? ya.nombre : k.nombre; $('#ep_tel', m).value = k.tel || (ya && ya.tel) || ''; pintarSug();
   };
   $('#ep_c', m).onchange = () => { const k = clientePorNombre(val('ep_c', m)); if (k && k.tel && !val('ep_tel', m)) $('#ep_tel', m).value = k.tel; };
+  /* sugerencias de clientes debajo del nombre: los últimos que pidieron, o los que coinciden con lo que va escribiendo (en cualquier parte del nombre o el teléfono) */
+  const ultimo = {}; for (const o of pedidosTodos()) if ((ultimo[o.cliente_id] || '') < o.recibido) ultimo[o.cliente_id] = o.recibido;
+  const pintarSug = () => {
+    const q = val('ep_c', m), exacto = clientePorNombre(q);
+    let l = q ? clientes.filter(k => coincide(k.nombre + ' ' + (k.tel || ''), q)) : clientes.slice().sort((a, b) => (ultimo[b.id] || '').localeCompare(ultimo[a.id] || '') || a.nombre.localeCompare(b.nombre, 'es'));
+    if (exacto) l = l.filter(k => k.id !== exacto.id);
+    $('#epSug', m).innerHTML = l.slice(0, 8).map(k => `<button type="button" class="chip-cli" data-cli="${k.id}">${esc(k.nombre)}</button>`).join('')
+      + (q && !exacto && !l.length ? `<span class="muted chico">Cliente nuevo: se crea al guardar</span>` : '');
+  };
+  pintarSug();
+  $('#ep_c', m).addEventListener('input', pintarSug);
+  $('#epSug', m).onclick = e => { const b = e.target.closest('[data-cli]'); if (!b) return; const k = DB.get('clientes', b.dataset.cli);
+    $('#ep_c', m).value = k.nombre; if (k.tel) $('#ep_tel', m).value = k.tel; pintarSug(); if (!$('#ep_t', m).value.trim()) $('#ep_t', m).focus(); };
   $('#epPeg', m).onclick = async () => {
     try { const t = await navigator.clipboard.readText(); if (!t.trim()) return toast('No hay nada copiado', true); const w = leerWhatsApp(t);
       $('#ep_t', m).value = w.texto; if (w.cliente && !val('ep_c', m)) $('#ep_c', m).value = w.cliente; if (w.fecha) { $('#ep_f', m).value = w.fecha; $('#ep_h', m).value = w.hora; } }

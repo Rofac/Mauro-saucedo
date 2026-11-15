@@ -1,5 +1,5 @@
 /* Guarda la app en el celular para que abra sin internet. Al cambiar VERSION se actualiza. */
-const VERSION = 'ped-1.1.0';
+const VERSION = 'ped-1.1.1';
 const ARCHIVOS = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/util.js', 'js/db.js', 'js/lic.js', 'js/ui.js', 'js/adjuntos.js', 'js/pedidos.js', 'js/cuentas.js', 'js/calendario.js', 'js/gastos.js', 'js/clientes.js', 'js/inicio.js', 'js/config.js', 'js/legal.js', 'js/main.js',
   'img/logo.png', 'img/favicon.png', 'img/icono-192.png', 'img/icono-512.png', 'img/icono-maskable.png', 'img/apple-touch-icon.png'];
