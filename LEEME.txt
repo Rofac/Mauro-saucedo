@@ -1,0 +1,31 @@
+MS PEDIDOS — app de celular (Android) para Mauro Saucedo
+=========================================================
+Para revendedores que reciben pedidos por WhatsApp y los cargan en la app del proveedor (Jaguar).
+
+QUÉ HACE
+- PEDIDOS: desde WhatsApp, mantener apretado el mensaje (o varios) → Compartir → "MS Pedidos".
+  Se abre el pedido ya escrito (si se comparten varios mensajes toma solo el cliente, el día y la hora).
+  Queda en "Falta cargar" (en rojo si pasan más de 3 horas, se cambia en Configuración).
+  Botón "Cargado" cuando lo pasa a Jaguar (opcional: N° de pedido), después "Entregado". Todo tiene Deshacer.
+  Busca por cliente, producto o N°; filtra por hoy, ayer, 7 días, el mes o un día. Avisa si un pedido parece repetido.
+  "Copiar el pedido" para pegarlo en la app de Jaguar. Importe opcional y fecha de retiro.
+- CALENDARIO: por día, los pedidos que llegaron, retiros, lo que vence para pagar, quién dijo que paga,
+  gastos y recordatorios (pueden repetirse todas las semanas o todos los meses).
+- CUENTAS: "Me deben" (pedidos con importe que no pagó en el momento + fiado − pagos; fecha en que dijo que paga;
+  mandarle el saldo por WhatsApp) y "Tengo que pagar" (a quién, cuánto, vence; puede repetirse varios meses;
+  "Pagué" lo anota también en Gastos).
+- GASTOS: por día, mes y tipo (combustible, mercadería, peajes… se cambian en Configuración).
+- CLIENTES: se crean solos con el primer pedido. Ficha con teléfono, pedidos y cuenta.
+- Copia de seguridad (.json a WhatsApp/Drive), clave del dueño opcional, licencia PED (30 días de prueba).
+
+SUBIRLA A GITHUB (como las otras): repositorio nuevo (ej. "Pedidos"), subir TODO lo que está DENTRO de la
+carpeta MSPedidos, Settings > Pages > main / (root). Queda en https://rofac.github.io/Pedidos/
+
+INSTALARLA EN EL CELULAR DEL CLIENTE (Android)
+1. Abrir el link en CHROME → menú ⋮ → "Instalar aplicación".
+2. Abrirla una vez desde el ícono "MS Pedidos" y aceptar los términos.
+3. Recién instalada aparece en "Compartir" de WhatsApp (a veces hay que reiniciar el celular la primera vez).
+   En iPhone no aparece en Compartir: se copia el mensaje y en "+ Pedido" se toca "Pegar lo copiado".
+
+LICENCIA: generar_licencia_apps.py opción 5 (PED), con el nombre que figura en Configuración (viene "Mauro Saucedo")
+y el código del celular (Configuración > Licencia). El generador NO va en el zip ni a GitHub.
